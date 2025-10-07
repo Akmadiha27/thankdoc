@@ -261,7 +261,7 @@ const UserDashboard = () => {
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                   <User className="h-4 w-4 text-primary" />
                 </div>
-                <div className="hidden sm:block">
+                <div className="hidden md:block">
                   <p className="text-sm font-medium">{user.name}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
@@ -274,7 +274,7 @@ const UserDashboard = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-4xl pb-20 sm:pb-8">
         {/* Welcome Section */}
         <Card className="medical-card mb-8 animate-fade-in">
           <CardContent className="p-6">

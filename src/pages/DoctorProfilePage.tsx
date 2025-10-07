@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, isSameDay, isBefore } from "date-fns";
-import { initiateQRPayment, QrPaymentResponse } from "@/utils/payment";
+import { initiateQRPayment, QrPaymentResponse, initiateRazorpayPayment } from "@/utils/payment";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import QRPayment from "@/components/QRPayment";
@@ -385,6 +385,38 @@ useEffect(() => {
 
     // Otherwise proceed with normal payment
     const amount = doctor.consultation_fee;
+    
+    if (paymentMethod === "online") {
+      // Use Razorpay for online payments
+      await initiateRazorpayPayment({
+        amountInRupees: Number(amount || 0),
+        patientName: patientDetails.name || 'Patient',
+        patientEmail: patientDetails.email || '',
+        patientContact: patientDetails.contact || '',
+        description: `Consultation with ${doctor.name}`,
+        onSuccess: async (resp) => {
+          // On success, proceed to booking with the payment id as reference
+          setQrPaymentData({
+            referenceNumber: resp.razorpay_payment_id,
+            amount: Number(amount || 0),
+            timestamp: new Date().toISOString(),
+            status: 'completed',
+            upiId: '',
+            qrCodeUrl: '',
+          });
+          await confirmBooking(resp.razorpay_payment_id);
+          toast({ title: 'Payment successful', description: 'Your payment has been processed.' });
+        },
+        onFailure: (err) => {
+          console.error('Razorpay failure:', err);
+          toast({ title: 'Payment failed', description: 'Please try again.', variant: 'destructive' });
+        },
+        onDismiss: () => {
+          console.log('Razorpay dismissed');
+        },
+      });
+    } else {
+      // Use QR payment for offline payments
     initiateQRPayment({
       amount: amount,
       doctorName: doctor.name,
@@ -401,6 +433,7 @@ useEffect(() => {
         console.log("QR payment cancelled by user");
       }
     });
+    }
   };
 
   const handleConfirmBooking = async () => {
@@ -470,26 +503,56 @@ useEffect(() => {
 
       // 3. User has used all free appointments, proceed with payment
       if (paymentMethod === "online") {
-        // Online payment - initiate QR payment
-        return initiateQRPayment({
-          amount: doctor.consultation_fee,
-          doctorName: doctor.name,
-          patientName: patientDetails.name,
-          onSuccess: (response: QrPaymentResponse) => {
-            setQrPaymentData(response);
-            setShowQRModal(true);
+        // Online payment - use Razorpay
+        console.log('[Booking] Initiating Razorpay payment...');
+        return await initiateRazorpayPayment({
+          amountInRupees: Number(doctor.consultation_fee || 0),
+          patientName: patientDetails.name || 'Patient',
+          patientEmail: patientDetails.email || '',
+          patientContact: patientDetails.contact || '',
+          description: `Consultation with ${doctor.name}`,
+          onSuccess: async (resp) => {
+            console.log('[Booking] Payment successful, confirming booking...');
+            // On success, proceed to booking with the payment id as reference
+            setQrPaymentData({
+              referenceNumber: resp.razorpay_payment_id,
+              amount: Number(doctor.consultation_fee || 0),
+              timestamp: new Date().toISOString(),
+              status: 'completed',
+              upiId: '',
+              qrCodeUrl: '',
+            });
+            await confirmBooking(resp.razorpay_payment_id);
+            toast({ 
+              title: 'Payment successful', 
+              description: 'Your payment has been processed and booking confirmed!',
+              variant: 'default'
+            });
+            navigate('/bookings?tab=pending');
           },
-          onFailure: (error) => {
-            console.error("QR payment failed:", error);
-            toast({ title: "Payment failed", description: "Please try again.", variant: "destructive" });
+          onFailure: (err) => {
+            console.error('[Booking] Razorpay payment failed:', err);
+            const errorMessage = err?.error?.description || err?.message || 'Payment failed. Please try again.';
+            toast({ 
+              title: 'Payment failed', 
+              description: errorMessage, 
+              variant: 'destructive' 
+            });
           },
           onDismiss: () => {
-            console.log("QR payment cancelled by user");
-          }
+            console.log('[Booking] Razorpay modal dismissed by user');
+            toast({ 
+              title: 'Payment cancelled', 
+              description: 'You can try again when ready.',
+              variant: 'default'
+            });
+          },
         });
       } else {
         // Offline payment - pay at clinic
+        console.log('[Booking] Processing offline payment...');
         await confirmBooking('PAY_AT_CLINIC');
+        navigate('/bookings?tab=pending');
       }
 
     } catch (error) {
@@ -686,7 +749,7 @@ useEffect(() => {
           <>
             <Card className="medical-card mb-8 animate-fade-in">
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-start space-y-4 md:space-y-0 md:space-x-6">
+                <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-6">
                   <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0">
                     <Stethoscope className="h-16 w-16 text-primary" />
                   </div>
@@ -772,7 +835,7 @@ useEffect(() => {
           <>
             <Card className="medical-card mb-8 animate-fade-in">
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-start space-y-4 md:space-y-0 md:space-x-6">
+                <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-6">
                   <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0">
                     <Stethoscope className="h-16 w-16 text-primary" />
                   </div>
@@ -868,7 +931,7 @@ useEffect(() => {
           <>
             <Card className="medical-card mb-8 animate-fade-in">
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-start space-y-4 md:space-y-0 md:space-x-6">
+                <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-6">
                   <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {doctor.photo && doctor.photo !== "/placeholder.svg" ? (
                       <img 
@@ -1198,7 +1261,7 @@ useEffect(() => {
                         className="flex-1"
                       >
                         <QrCode className="h-4 w-4 mr-1" />
-                        Pay Online
+                        Pay with Razorpay
                       </Button>
                       {consultationType === "offline" && (
                         <Button
@@ -1240,90 +1303,6 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (session?.user) {
-                          // Test 1: Can we access appointments table at all?
-                          const { data: allAppts, error: allErr } = await supabase
-                            .from('appointments')
-                            .select('*')
-                            .eq('user_id', session.user.id);
-
-                          console.log('[RLS TEST] All appointments query:', { count: allAppts?.length, error: allErr });
-
-                          // Test 2: Check if any appointments have isFreeAppointment
-                          if (allAppts) {
-                            allAppts.forEach((apt, index) => {
-                              console.log(`[RLS TEST] Appointment ${index}:`, {
-                                id: apt.id,
-                                status: apt.status,
-                                notes: apt.notes,
-                                user_id: apt.user_id
-                              });
-                            });
-                          }
-                        }
-                      }}
-                      className="mr-2"
-                    >
-                      Test RLS
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (session?.user) {
-                          // Method 1: JSON casting
-                          const { count: count1 } = await supabase
-                            .from('appointments')
-                            .select('*', { count: 'exact' })
-                            .eq('user_id', session.user.id)
-                            .eq('notes::jsonb->>isFreeAppointment', 'true')
-                            .in('status', ['pending', 'confirmed', 'completed']);
-
-                          // Method 2: Text matching
-                          const { count: count2 } = await supabase
-                            .from('appointments')
-                            .select('*', { count: 'exact' })
-                            .eq('user_id', session.user.id)
-                            .like('notes', '%"isFreeAppointment":"true"%')
-                            .in('status', ['pending', 'confirmed', 'completed']);
-
-                          // Method 3: Manual filtering
-                          const { data: all } = await supabase
-                            .from('appointments')
-                            .select('id, status, notes')
-                            .eq('user_id', session.user.id)
-                            .in('status', ['pending', 'confirmed', 'completed']);
-
-                          let manual = 0;
-                          if (all) {
-                            manual = all.filter(apt => {
-                              try {
-                                const notes = typeof apt.notes === 'string' ? JSON.parse(apt.notes) : apt.notes;
-                                return notes && (notes.isFreeAppointment === 'true' || notes.isFreeAppointment === true);
-                              } catch (e) {
-                                return false;
-                              }
-                            }).length;
-                          }
-
-                          const finalCount = Math.max(count1 || 0, count2 || 0, manual);
-
-                          alert(`Final Count: ${finalCount}/4\nMethod 1 (JSON): ${count1}\nMethod 2 (Text): ${count2}\nMethod 3 (Manual): ${manual}\n\nAll appointments: ${JSON.stringify(all, null, 2)}`);
-                        }
-                      }}
-                      className="mr-2"
-                    >
-                      Debug Count
-                    </Button>
-
                     <Button
                       variant="medical"
                       className="w-full relative"
@@ -1339,7 +1318,6 @@ useEffect(() => {
                         )}
                       </div>
                     </Button>
-                  </div>
                 </div>
               )}
 

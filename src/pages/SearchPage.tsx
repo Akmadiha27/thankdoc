@@ -689,7 +689,7 @@ const SearchPage = () => {
       {/* Main Content with Sidebar */}
       <div className="flex-1 flex">
         {/* Main Search Content */}
-        <div className="flex-1 flex flex-col justify-center px-4 py-6">
+        <div className="flex-1 flex flex-col justify-center px-4 py-6 sm:px-6 lg:px-8">
           <Card className="medical-card w-full max-w-2xl mx-auto">
             <CardContent className="p-6">
               {/* Search Bar moved to top */}
@@ -700,15 +700,15 @@ const SearchPage = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="pl-12 pr-12 h-14 text-base medical-input rounded-xl"
+                  className="pl-12 pr-12 h-12 sm:h-14 text-sm sm:text-base medical-input rounded-xl"
                 />
                 <Button 
                   onClick={handleSearch}
                   disabled={!searchQuery.trim()}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-lg medical-button-primary p-0"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 sm:h-10 sm:w-10 rounded-lg medical-button-primary p-0"
                   size="icon"
                 >
-                  <Search className="h-5 w-5" />
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </div>
 
@@ -1403,57 +1403,6 @@ const SearchPage = () => {
 
                   {/* Action Buttons */}
                   <div className="flex flex-col gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (session?.user) {
-                          // Method 1: JSON casting
-                          const { count: count1 } = await supabase
-                            .from('appointments')
-                            .select('*', { count: 'exact' })
-                            .eq('user_id', session.user.id)
-                            .eq('notes::jsonb->>isFreeAppointment', 'true')
-                            .in('status', ['pending', 'confirmed', 'completed']);
-
-                          // Method 2: Text matching
-                          const { count: count2 } = await supabase
-                            .from('appointments')
-                            .select('*', { count: 'exact' })
-                            .eq('user_id', session.user.id)
-                            .like('notes', '%"isFreeAppointment":"true"%')
-                            .in('status', ['pending', 'confirmed', 'completed']);
-
-                          // Method 3: Manual filtering
-                          const { data: all } = await supabase
-                            .from('appointments')
-                            .select('id, status, notes')
-                            .eq('user_id', session.user.id)
-                            .in('status', ['pending', 'confirmed', 'completed']);
-
-                          let manual = 0;
-                          if (all) {
-                            manual = all.filter(apt => {
-                              try {
-                                const notes = typeof apt.notes === 'string' ? JSON.parse(apt.notes) : apt.notes;
-                                return notes && (notes.isFreeAppointment === 'true' || notes.isFreeAppointment === true);
-                              } catch (e) {
-                                return false;
-                              }
-                            }).length;
-                          }
-
-                          const finalCount = Math.max(count1 || 0, count2 || 0, manual);
-
-                          alert(`Membership Details Count:\nFinal Count: ${finalCount}/4\nMethod 1 (JSON): ${count1}\nMethod 2 (Text): ${count2}\nMethod 3 (Manual): ${manual}\n\nTotal Appointments: ${all?.length || 0}`);
-                        }
-                      }}
-                      className="text-xs"
-                    >
-                      Debug Count
-                    </Button>
-
                     <Button
                       variant="medical"
                       className="w-full"

@@ -9,8 +9,14 @@ max_rows = 1000
 
 [auth]
 enabled = true
-site_url = "http://localhost:8081"
-additional_redirect_urls = ["https://dkjkuxbadylsquvrclnk.supabase.co/auth/v1/callback"]
+site_url = "https://thankdoc.vercel.app"
+additional_redirect_urls = [
+  "https://dkjkuxbadylsquvrclnk.supabase.co/auth/v1/callback",
+  "https://thankdoc.vercel.app",
+  "https://thankdoc.vercel.app/auth/callback",
+  "http://localhost:5173",
+  "http://localhost:3000"
+]
 jwt_expiry = 3600
 enable_signup = true
 

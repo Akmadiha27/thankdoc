@@ -155,6 +155,13 @@ All colors MUST be HSL for consistency and theming.
     background: var(--gradient-card);
   }
 
+  /* Responsive improvements */
+  @media (max-width: 640px) {
+    .medical-card {
+      @apply mx-2;
+    }
+  }
+
   .medical-card:hover {
     @apply shadow-[var(--shadow-elevated)] scale-[1.02];
     transition: var(--transition-medical);

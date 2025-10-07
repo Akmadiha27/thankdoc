@@ -1,4 +1,5 @@
 import { QR_PAYMENT_CONFIG } from "@/config/qr-payment";
+import { RAZORPAY_CONFIG, getRazorpayKey, RazorpayOptions, RazorpayResponse } from "@/config/razorpay";
 
 /**
  * Interface for QR payment response
@@ -75,4 +76,113 @@ export const generateQRCodeUrl = (params: {
   
   // Return a QR code generator URL
   return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiLink)}`;
+};
+
+/**
+ * Interface for Razorpay payment parameters
+ */
+export interface InitiateRazorpayParams {
+  amountInRupees: number;
+  patientName: string;
+  patientEmail: string;
+  patientContact: string;
+  description: string;
+  onSuccess: (response: RazorpayResponse) => void;
+  onFailure?: (err: any) => void;
+  onDismiss?: () => void;
+}
+
+/**
+ * Loads Razorpay script dynamically
+ */
+export const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
+/**
+ * Initiates a Razorpay Checkout payment
+ */
+export const initiateRazorpayPayment = async ({
+  amountInRupees,
+  patientName,
+  patientEmail,
+  patientContact,
+  description,
+  onSuccess,
+  onFailure,
+  onDismiss,
+}: InitiateRazorpayParams) => {
+  try {
+    console.log('[Razorpay] Initiating payment...', { amountInRupees, patientName });
+    
+    // Load Razorpay script
+    const ok = await loadRazorpayScript();
+    if (!ok) {
+      console.error('[Razorpay] Failed to load Razorpay script');
+      onFailure?.(new Error('Failed to load Razorpay. Please check your internet connection.'));
+      return;
+    }
+    
+    console.log('[Razorpay] Script loaded successfully');
+
+    // Get and validate Razorpay key
+    const razorpayKey = getRazorpayKey();
+    if (!razorpayKey) {
+      console.error('[Razorpay] Razorpay key not found');
+      onFailure?.(new Error('Razorpay is not configured. Please contact support.'));
+      return;
+    }
+    
+    console.log('[Razorpay] Key found:', razorpayKey.substring(0, 10) + '...');
+
+    const amountInPaisa = Math.round((amountInRupees || 0) * 100);
+    console.log('[Razorpay] Amount in paisa:', amountInPaisa);
+
+    const options: RazorpayOptions = {
+      key: razorpayKey,
+      amount: amountInPaisa,
+      currency: RAZORPAY_CONFIG.CURRENCY,
+      name: RAZORPAY_CONFIG.COMPANY_NAME,
+      description: description || 'Consultation payment',
+      image: RAZORPAY_CONFIG.COMPANY_LOGO,
+      handler: (response: RazorpayResponse) => {
+        console.log('[Razorpay] Payment successful:', response);
+        onSuccess(response);
+      },
+      prefill: {
+        name: patientName || '',
+        email: patientEmail || '',
+        contact: patientContact || '',
+      },
+      theme: { color: RAZORPAY_CONFIG.THEME_COLOR },
+      modal: {
+        ondismiss: () => {
+          console.log('[Razorpay] Payment modal dismissed');
+          onDismiss?.();
+        },
+      },
+    };
+
+    console.log('[Razorpay] Opening Razorpay checkout...');
+    const rzp = new window.Razorpay(options);
+    rzp.on('payment.failed', (err: any) => {
+      console.error('[Razorpay] Payment failed:', err);
+      onFailure?.(err);
+    });
+    rzp.open();
+  } catch (error) {
+    console.error('[Razorpay] Unexpected error:', error);
+    onFailure?.(error);
+  }
 };

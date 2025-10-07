@@ -122,7 +122,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <div className="min-h-screen flex flex-col">
-          <main className="flex-1">
+          <main className="flex-1 pb-16 sm:pb-0">
             <Routes>
               <Route path="/" element={<SearchPage />} />
               <Route path="/search" element={<SearchResultsPage />} />

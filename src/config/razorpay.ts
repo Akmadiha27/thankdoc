@@ -1,31 +1,40 @@
 // Razorpay Configuration
-// Replace these values with your actual Razorpay keys
+// DO NOT hardcode credentials here. The publishable key is provided via env var.
 
 export const RAZORPAY_CONFIG = {
-  // Test Environment
-  TEST_KEY: "rzp_test_RaqAfVV9DXXLjp", // Replace with your test key
-  
-  // Live Environment  
-  LIVE_KEY: "rzp_live_YOUR_LIVE_KEY_HERE", // Replace with your live key
-  
-  // Current Environment (change to 'live' for production)
-  ENVIRONMENT: "test" as "test" | "live",
+  // Current Environment (informational only)
+  ENVIRONMENT: (import.meta.env.MODE === 'production' ? 'live' : 'test') as 'test' | 'live',
   
   // Default Settings
   CURRENCY: "INR",
   COMPANY_NAME: "ThankYouDoc",
-  COMPANY_LOGO: "/placeholder.svg", // Replace with your logo URL
+  COMPANY_LOGO: "/placeholder.svg",
   THEME_COLOR: "#3B82F6",
   
   // Consultation Fee (in paisa - 1 INR = 100 paisa)
   CONSULTATION_FEE: 50000, // 500 INR
 };
 
-// Get current Razorpay key based on environment
+// Get current Razorpay publishable key from environment
+// Set VITE_RAZORPAY_KEY_ID in your .env (frontend) or hosting env vars
 export const getRazorpayKey = () => {
-  return RAZORPAY_CONFIG.ENVIRONMENT === "test" 
-    ? RAZORPAY_CONFIG.TEST_KEY 
-    : RAZORPAY_CONFIG.LIVE_KEY;
+  const envKey = import.meta.env.VITE_RAZORPAY_KEY_ID as string | undefined;
+  const runtimeKey = (globalThis as any)?.__RAZORPAY_KEY_ID as string | undefined;
+  const storageKey = typeof localStorage !== 'undefined' ? localStorage.getItem('RAZORPAY_KEY_ID') || undefined : undefined;
+  
+  // Fallback test key for development (replace with your actual test key)
+  const fallbackTestKey = 'rzp_test_RaqAfVV9DXXLjp';
+  
+  const key = envKey || runtimeKey || storageKey || fallbackTestKey;
+  
+  if (!envKey && !runtimeKey && !storageKey) {
+    console.warn('[Razorpay Config] Using fallback test key. For production, set VITE_RAZORPAY_KEY_ID in env vars.');
+    console.warn('[Razorpay Config] Add to .env file: VITE_RAZORPAY_KEY_ID=your_razorpay_key_here');
+  } else {
+    console.log('[Razorpay Config] Razorpay key loaded from:', envKey ? 'env' : runtimeKey ? 'runtime' : 'localStorage');
+  }
+  
+  return key;
 };
 
 // Payment options interface

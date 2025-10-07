@@ -46,21 +46,21 @@ const BottomNavigation = ({ currentPage }: BottomNavigationProps) => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 glass-effect border-t">
-      <div className="grid grid-cols-4 px-2 py-2">
+      <div className="grid grid-cols-4 px-1 sm:px-2 py-2">
         {navItems.map((item) => {
           const IconComponent = item.icon;
           return (
             <Button
               key={item.id}
               variant="ghost"
-              className={`flex flex-col items-center space-y-1 h-14 transition-all duration-200 hover:bg-primary/10 hover:scale-105 ${
+              className={`flex flex-col items-center space-y-1 h-12 sm:h-14 transition-all duration-200 hover:bg-primary/10 hover:scale-105 ${
                 item.isActive 
                   ? "text-primary" 
                   : "text-muted-foreground hover:text-primary"
               }`}
               onClick={() => navigate(item.path)}
             >
-              <IconComponent className="h-5 w-5" />
+              <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className={`text-xs ${item.isActive ? "font-medium" : ""}`}>
                 {item.label}
               </span>
