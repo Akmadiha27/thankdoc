@@ -7,15 +7,20 @@ schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
+# IMPORTANT: Update these URLs in Supabase Dashboard for production deployment
+# Go to: Supabase Dashboard > Authentication > URL Configuration
+# Site URL should be your production domain (e.g., https://your-domain.vercel.app)
+# Add all redirect URLs including localhost for development
+
 [auth]
 enabled = true
-site_url = "https://thankdoc.vercel.app"
+site_url = "https://thankdoc.vercel.app"  # UPDATE THIS to your actual production domain
 additional_redirect_urls = [
   "https://dkjkuxbadylsquvrclnk.supabase.co/auth/v1/callback",
-  "https://thankdoc.vercel.app",
-  "https://thankdoc.vercel.app/auth/callback",
-  "http://localhost:5173",
-  "http://localhost:3000"
+  "https://thankdoc.vercel.app",  # UPDATE THIS to your actual production domain
+  "https://thankdoc.vercel.app/auth/callback",  # UPDATE THIS to your actual production domain
+  "http://localhost:5173",  # Keep for local development
+  "http://localhost:3000"   # Keep for local development
 ]
 jwt_expiry = 3600
 enable_signup = true
