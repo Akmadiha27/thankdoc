@@ -19,6 +19,7 @@ import FeedbackPage from "./pages/FeedbackPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import AuthCallback from "./pages/AuthCallback"; // Import the new AuthCallback component
+import GoogleLoginTest from "./pages/GoogleLoginTest"; // Import the Google login test page
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -156,6 +157,8 @@ const App = () => {
               } />
               {/* Supabase OAuth Callback Route */}
               <Route path="/auth/v1/callback" element={<AuthCallback />} />
+              {/* Google Login Test Route */}
+              <Route path="/google-login-test" element={<GoogleLoginTest />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

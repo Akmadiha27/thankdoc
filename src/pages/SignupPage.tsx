@@ -101,10 +101,30 @@ const SignupPage = () => {
   const handleGoogleSignUp = async () => {
     setIsLoading(true);
     try {
+      console.log('🔍 Starting Google OAuth for Signup...');
+      console.log('📍 Current origin:', window.location.origin);
+      console.log('📍 Current hostname:', window.location.hostname);
+      
+      // Determine the correct redirect URL based on environment
+      let redirectUrl;
+      const isProduction = !window.location.hostname.includes('localhost');
+      
+      if (isProduction) {
+        // For production, use the Supabase callback URL
+        redirectUrl = `https://dkjkuxbadylsquvrclnk.supabase.co/auth/v1/callback`;
+        console.log('🌐 Production mode - using Supabase callback URL');
+      } else {
+        // For development, use local callback
+        redirectUrl = `${window.location.origin}/auth/v1/callback`;
+        console.log('🏠 Development mode - using local callback URL');
+      }
+      
+      console.log(`🎯 Using redirect URL: ${redirectUrl}`);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/v1/callback`,
+          redirectTo: redirectUrl,
         },
       });
 

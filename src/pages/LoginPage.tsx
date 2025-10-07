@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stethoscope, Eye, EyeOff, Heart } from "lucide-react";
 import { FaGoogle } from "react-icons/fa"; // Import Google icon
 import { supabase } from "@/integrations/supabase/client";
+import GoogleLoginDebugger from "@/components/GoogleLoginDebugger";
 
 const LoginPage = () => {
   const location = useLocation();
@@ -88,18 +89,62 @@ const LoginPage = () => {
   // Supabase Google Sign-In handler
   const handleGoogleSignIn = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('🔍 Starting Google OAuth...');
+      console.log('📍 Current origin:', window.location.origin);
+      console.log('📍 Current pathname:', window.location.pathname);
+      console.log('📍 Current hostname:', window.location.hostname);
+      console.log('🔗 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      
+      // Determine the correct redirect URL based on environment
+      let redirectUrl;
+      const isProduction = !window.location.hostname.includes('localhost');
+      
+      if (isProduction) {
+        // For production, use the Supabase callback URL
+        redirectUrl = `https://dkjkuxbadylsquvrclnk.supabase.co/auth/v1/callback`;
+        console.log('🌐 Production mode - using Supabase callback URL');
+      } else {
+        // For development, use local callback
+        redirectUrl = `${window.location.origin}/auth/v1/callback`;
+        console.log('🏠 Development mode - using local callback URL');
+      }
+      
+      console.log(`🎯 Using redirect URL: ${redirectUrl}`);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/v1/callback`,
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         },
       });
 
       if (error) {
-        setErrors({ general: error.message });
+        console.error('❌ Google OAuth Error:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          status: error.status,
+          statusText: error.statusText
+        });
+        
+        // Provide more specific error messages
+        if (error.message.includes('requested path is invalid')) {
+          setErrors({ 
+            general: `Redirect URI mismatch. Please check Google Cloud Console settings. Error: ${error.message}` 
+          });
+        } else {
+          setErrors({ general: `Google login failed: ${error.message}` });
+        }
+      } else {
+        console.log('✅ Google OAuth initiated successfully:', data);
+        // The redirect will happen automatically
       }
     } catch (error: any) {
-      setErrors({ general: error.message || 'An unexpected error occurred during Google Sign-In.' });
+      console.error('❌ Unexpected error during Google Sign-In:', error);
+      setErrors({ general: `Google login failed: ${error.message || 'An unexpected error occurred during Google Sign-In.'}` });
     }
   };
 
@@ -250,6 +295,9 @@ const LoginPage = () => {
           </p>
         </div>
       </div>
+      
+      {/* Google Login Debugger */}
+      <GoogleLoginDebugger />
     </div>
   );
 };
