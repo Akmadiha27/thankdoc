@@ -1,0 +1,5 @@
+# Netlify redirects for SPA routing
+/*    /index.html   200
+
+# API redirects
+/api/*  https://your-supabase-project.supabase.co/:splat  200
